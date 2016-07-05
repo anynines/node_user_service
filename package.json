@@ -1,0 +1,18 @@
+{
+  "name": "node_user_service",
+  "version": "1.0.0",
+  "description": "simple node rest api for creating users in a mysql database",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "mebnoah",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "~1.15.2",
+    "express": "~4.14.0",
+    "md5": "^2.1.0",
+    "mysql": "^2.11.1",
+    "request": "^2.72.0"
+  }
+}
