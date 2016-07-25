@@ -1,22 +1,26 @@
 var express = require('express');
 var router = express.Router();
-var mysql = require('mysql');
+var pg = require('pg');
 var md5 = require('md5');
 var request = require('request');
 
-var connection = mysql.createConnection({
-  host     : 'dockerhost',
-  user     : 'root',
-  password : 'root',
-  database : 'users'
+var psqlCredentials = JSON.parse(process.env.VCAP_SERVICES)['a9hcp-postgresql'][0]['credentials'];
+console.log(psqlCredentials);
+
+var connection = new pg.Client({
+  user: psqlCredentials.username,
+  database: psqlCredentials.name,
+  password: psqlCredentials.password,
+  port: psqlCredentials.port,
+  host: psqlCredentials.host
 });
 
 connection.connect(function(err) {
   if (err) {
-    console.error('error connecting to mysql: ' + err.stack);
+    console.error('error connecting to db: ' + err.stack);
     return;
-  } 
-  console.log('connected to mysql db ');
+  }
+  console.log('connected to db ');
 });
 
 router.get('/hello', function(req, res) {
@@ -24,14 +28,14 @@ router.get('/hello', function(req, res) {
 });
 
 router.post('/create_table', function(req, res) {
-  connection.query('CREATE TABLE IF NOT EXISTS users(id INT(11) AUTO_INCREMENT, firstname VARCHAR(32), lastname VARCHAR(32), age INT,  email VARCHAR(32), twittername VARCHAR(32), twittervalid BOOLEAN, avatar_url VARCHAR(100), PRIMARY KEY(id));', function(err, rows, fields) {
+  connection.query('CREATE TABLE IF NOT EXISTS users(id INT, firstname VARCHAR(32), lastname VARCHAR(32), age INT,  email VARCHAR(32), twittername VARCHAR(32), twittervalid BOOLEAN, avatar_url VARCHAR(100), PRIMARY KEY(id));', function(err, rows, fields) {
     if (err) {
       console.log(err);
       res.status(500).json({success: false, msg: 'could not create table'});
     } else {
       res.status(200).json({success: true, msg: 'created table'});
     }
-  });    
+  });
 });
 
 router.post('/user', function(req, res) {
@@ -61,7 +65,7 @@ router.get('/user/:user_id', function(req, res){
       console.log(err);
       res.status(500).json({success: false, msg: 'could not get user details'});
     } else {
-      res.status(200).json({success: true, msg: 'user: ' + JSON.stringify(rows[0])});
+      res.status(200).json({success: true, msg: 'user: ' + JSON.stringify(rows.rows[0])});
     }
   });
 });
@@ -100,7 +104,7 @@ var twittercheck = function(name, callback){
 
 var add_user = function(req, res, twittervalid){
   var gravatarurl = 'https://www.gravatar.com/avatar/' + md5(req.body.email);
-  var insert_statement = 'INSERT INTO users (firstname, lastname, age, email, twittername, twittervalid, avatar_url) values (\"' + req.body.firstname + '\", \"' + req.body.lastname + '\", ' + req.body.age + ', \"' + req.body.email + '\", \"'+ req.body.twittername  + '\", ' + twittervalid + ', \"' + gravatarurl + '\");';
+  var insert_statement = 'INSERT INTO users (id, firstname, lastname, age, email, twittername, twittervalid, avatar_url) values (coalesce((SELECT max(id)+1 FROM users), 0), \'' + req.body.firstname + '\', \'' + req.body.lastname + '\', ' + req.body.age + ', \'' + req.body.email + '\', \''+ req.body.twittername  + '\', ' + twittervalid + ', \'' + gravatarurl + '\');';
   console.log(insert_statement);
 
   connection.query(insert_statement, function(err, rows, fields) {
@@ -111,12 +115,12 @@ var add_user = function(req, res, twittervalid){
       add_project(req.body.firstname + '_' + req.body.lastname + '_training');
       res.status(200).json({success: true, msg: 'user added. id: ' + rows.insertId });
     };
-  });    
+  });
 }
 
 var edit_user = function(req, res, twittervalid){
   var gravatarurl = 'https://www.gravatar.com/avatar/' + md5(req.body.email);
-  var update_statement = 'UPDATE users SET firstname = \"' + req.body.firstname + '\", lastname = \"' + req.body.lastname + '\", age = ' + req.body.age + ', email = \"' + req.body.email + '\", twittername = \"'+ req.body.twittername  + '\", twittervalid = ' + twittervalid + ', avatar_url = \"' + gravatarurl + '\" where id = ' + req.params.user_id + ';';
+  var update_statement = 'UPDATE users SET firstname = \'' + req.body.firstname + '\', lastname = \'' + req.body.lastname + '\', age = ' + req.body.age + ', email = \'' + req.body.email + '\', twittername = \''+ req.body.twittername  + '\', twittervalid = ' + twittervalid + ', avatar_url = \'' + gravatarurl + '\' where id = ' + req.params.user_id + ';';
   console.log(update_statement);
 
   connection.query(update_statement, function(err, rows, fields) {
@@ -126,7 +130,7 @@ var edit_user = function(req, res, twittervalid){
     } else {
       res.status(200).json({success: true, msg: 'user updated '});
     };
-  });    
+  });
 }
 
 var add_project = function(project_name){
@@ -142,7 +146,7 @@ var add_project = function(project_name){
     }
     if (!error && response.statusCode == 404) {
        console.log('could not add project');
-    }  
+    }
   })
 }
 
