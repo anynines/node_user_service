@@ -48,23 +48,23 @@ router.post('/user', function(req, res) {
 });
 
 router.get('/user', function(req, res){
-  connection.query('SELECT * FROM users', function(err, rows, fields){
+  connection.query('SELECT * FROM users', function(err, result, fields){
     if(err){
       console.log(err);
       res.status(500).json({success: false, msg: 'could not get users'});
     } else {
-      res.status(200).json({success: true, msg: 'users: ' + JSON.stringify(rows)});
+      res.status(200).json(result.rows);
     }
   });
 });
 
 router.get('/user/:user_id', function(req, res){
-  connection.query('SELECT * FROM users WHERE id = ' + req.params.user_id + ';', function(err, rows, fields){
+  connection.query('SELECT * FROM users WHERE id = ' + req.params.user_id + ';', function(err, result, fields){
     if(err){
       console.log(err);
       res.status(500).json({success: false, msg: 'could not get user details'});
     } else {
-      res.status(200).json({success: true, msg: 'user: ' + JSON.stringify(rows.rows[0])});
+      res.status(200).json(result.rows[0]);
     }
   });
 });
