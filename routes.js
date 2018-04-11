@@ -4,8 +4,7 @@ var pg = require('pg');
 var md5 = require('md5');
 var request = require('request');
 
-var psqlCredentials = JSON.parse(process.env.VCAP_SERVICES)['a9hcp-postgresql'][0]['credentials'];
-console.log(psqlCredentials);
+var psqlCredentials = JSON.parse(process.env.VCAP_SERVICES)['a9s-postgresql94'][0]['credentials'];
 
 var connection = new pg.Client({
   user: psqlCredentials.username,
