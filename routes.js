@@ -4,14 +4,11 @@ var pg = require('pg');
 var md5 = require('md5');
 var request = require('request');
 
-var psqlCredentials = JSON.parse(process.env.VCAP_SERVICES)['a9s-postgresql94'][0]['credentials'];
-
-var connection = new pg.Client({
-  user: psqlCredentials.username,
-  database: psqlCredentials.name,
-  password: psqlCredentials.password,
-  port: psqlCredentials.port,
-  host: psqlCredentials.host
+var connection = pg.createConnection({
+  host     : 'dockerhost',
+  user     : 'root',
+  password : 'root',
+  database : 'users'
 });
 
 connection.connect(function(err) {
